@@ -206,7 +206,7 @@
   .soll-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 
   /* PERMS */
-  .role-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .role-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; max-height: 160px; overflow-y: auto; padding: 4px; }
   .role-tab {
     padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
     cursor: pointer; border: 1px solid var(--border2); background: var(--surface);
@@ -893,7 +893,16 @@ function showToast(msg, icon='✅') {
 }
 
 // ===================== PERMS =====================
-const PERM_ROLLEN = ['Eigenaar','Mede-Eigenaar','Hoofd Admin','Admin','Moderator','Trial-Mod'];
+const PERM_ROLLEN = [
+  'Eigenaar','Mede-eigenaar','Beheer','Mede-beheer',
+  'Lead executive','head lead developer','senior lead developer','junior Lead development','Discord Development',
+  'Bestuur','directeur','burgemeester','hoge raad','Supervisor',
+  'V.I.P',
+  'Head management','Management','Senior administrator','Junior management',
+  'Administrator','Junior administrator',
+  'Senior moderator','Moderator','Junior moderator',
+  'Content management','Content creator'
+];
 
 const PERM_CATEGORIEEN = [
   {
@@ -918,48 +927,61 @@ const PERM_CATEGORIEEN = [
   }
 ];
 
+// Helpers: lijsten van perms die UIT zijn per rolgroep
+const _S  = ['Server herstarten','Server afsluiten','Whitelist beheren','Anti-cheat beheren','Logs bekijken','Admin panel openen','Gamepass beheren'];
+const _SM = ['Staff aanwerven','Staff ontslaan','Staff promoveren','Staff degraderen'];
+const _BL = ['Blacklist beheren','Sollicitaties beoordelen'];
+const _BN = ['Permanente ban','Tijdelijke ban','Ban opheffen'];
+const _IG = ['God mode','Noclip','Onzichtbaar','Wapens geven','Voertuig spawnen','Geld geven','Items spawnen','Weer aanpassen','Tijd aanpassen'];
+const _CM = ['Aankondiging sturen','Globale melding','Server bericht','Hint/tip sturen'];
+const _SP = ['Speler teleporteren','Speler freezen','Spectate speler'];
+
+function _off(...lists) {
+  const o = {};
+  lists.flat().forEach(p => o[p] = false);
+  return o;
+}
+
 const PERM_DEFAULTS = {
-  'Eigenaar':      { /* alles aan */ },
-  'Mede-Eigenaar': {
-    'Server afsluiten': false,
-    'Gamepass beheren': false,
-  },
-  'Hoofd Admin': {
-    'Server afsluiten': false, 'Server herstarten': false, 'Whitelist beheren': false,
-    'Anti-cheat beheren': false, 'Gamepass beheren': false,
-    'Staff aanwerven': false, 'Staff ontslaan': false, 'Staff promoveren': false, 'Staff degraderen': false,
-    'Geld geven': false, 'Items spawnen': false,
-  },
-  'Admin': {
-    'Server afsluiten': false, 'Server herstarten': false, 'Whitelist beheren': false,
-    'Anti-cheat beheren': false, 'Gamepass beheren': false, 'Logs bekijken': false, 'Admin panel openen': false,
-    'Staff aanwerven': false, 'Staff ontslaan': false, 'Staff promoveren': false, 'Staff degraderen': false,
-    'Blacklist beheren': false, 'Sollicitaties beoordelen': false,
-    'Permanente ban': false, 'Ban opheffen': false,
-    'Geld geven': false, 'Items spawnen': false, 'God mode': false,
-  },
-  'Moderator': {
-    'Server afsluiten': false, 'Server herstarten': false, 'Whitelist beheren': false,
-    'Anti-cheat beheren': false, 'Gamepass beheren': false, 'Logs bekijken': false, 'Admin panel openen': false,
-    'Staff aanwerven': false, 'Staff ontslaan': false, 'Staff promoveren': false, 'Staff degraderen': false,
-    'Blacklist beheren': false, 'Sollicitaties beoordelen': false,
-    'Permanente ban': false, 'Tijdelijke ban': false, 'Ban opheffen': false,
-    'Geld geven': false, 'Items spawnen': false, 'God mode': false, 'Noclip': false,
-    'Voertuig spawnen': false, 'Wapens geven': false, 'Weer aanpassen': false, 'Tijd aanpassen': false,
-    'Aankondiging sturen': false, 'Globale melding': false, 'Server bericht': false,
-  },
-  'Trial-Mod': {
-    'Server afsluiten': false, 'Server herstarten': false, 'Whitelist beheren': false,
-    'Anti-cheat beheren': false, 'Gamepass beheren': false, 'Logs bekijken': false, 'Admin panel openen': false,
-    'Staff aanwerven': false, 'Staff ontslaan': false, 'Staff promoveren': false, 'Staff degraderen': false,
-    'Blacklist beheren': false, 'Sollicitaties beoordelen': false,
-    'Permanente ban': false, 'Tijdelijke ban': false, 'Ban opheffen': false,
-    'Geld geven': false, 'Items spawnen': false, 'God mode': false, 'Noclip': false,
-    'Voertuig spawnen': false, 'Wapens geven': false, 'Weer aanpassen': false, 'Tijd aanpassen': false,
-    'Aankondiging sturen': false, 'Globale melding': false, 'Server bericht': false,
-    'Speler teleporteren': false, 'Speler freezen': false, 'Spectate speler': false,
-    'Onzichtbaar': false, 'Straf loggen': false,
-  }
+  // ── Eigendom ──────────────────────────────────────
+  'Eigenaar':              {},  // alles aan
+  'Mede-eigenaar':         _off(['Server afsluiten','Gamepass beheren']),
+  'Beheer':                _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren']),
+  'Mede-beheer':           _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren',..._SM]),
+
+  // ── Development ───────────────────────────────────
+  'Lead executive':        _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren',..._SM]),
+  'head lead developer':   _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren',..._SM,'Permanente ban']),
+  'senior lead developer': _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren','Server herstarten',..._SM,'Permanente ban','Ban opheffen','Geld geven','Items spawnen']),
+  'junior Lead development':_off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren','Server herstarten','Whitelist beheren',..._SM,'Permanente ban','Ban opheffen','Geld geven','Items spawnen','Wapens geven','Weer aanpassen','Tijd aanpassen']),
+  'Discord Development':   _off(...[_S,_SM,_BL,_BN,_IG,_SP,'Speler muten','Speler freezen','Globale melding','Server bericht']),
+
+  // ── Bestuur ───────────────────────────────────────
+  'Bestuur':               _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren','Server herstarten',..._SM]),
+  'directeur':             _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren','Server herstarten',..._SM,..._BL,'Permanente ban']),
+  'burgemeester':          _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren','Server herstarten',..._SM,..._BL,'Permanente ban','Ban opheffen','Geld geven','Items spawnen']),
+  'hoge raad':             _off(['Server afsluiten','Gamepass beheren','Anti-cheat beheren','Server herstarten',..._SM,..._BL,'Permanente ban','Ban opheffen','Geld geven','Items spawnen','Wapens geven']),
+  'Supervisor':            _off(...[_S,_SM,_BL,_BN,['Geld geven','Items spawnen','Wapens geven','Weer aanpassen','Tijd aanpassen','God mode'],['Globale melding','Server bericht','Aankondiging sturen']]),
+  'V.I.P':                 _off(...[_S,_SM,_BL,_BN,_IG,_SP,['Speler kicken','Speler muten','Speler freezen'],['Aankondiging sturen','Globale melding','Server bericht','Hint/tip sturen']]),
+
+  // ── Management ────────────────────────────────────
+  'Head management':       _off(...[_S,_SM,_BL,['Permanente ban','Ban opheffen','Geld geven','Items spawnen','God mode']]),
+  'Management':            _off(...[_S,_SM,_BL,['Permanente ban','Ban opheffen','Geld geven','Items spawnen','God mode','Noclip','Wapens geven','Weer aanpassen','Tijd aanpassen']]),
+  'Senior administrator':  _off(...[_S,_SM,_BL,['Permanente ban','Ban opheffen','Geld geven','Items spawnen','God mode','Noclip','Wapens geven','Weer aanpassen','Tijd aanpassen'],['Aankondiging sturen','Globale melding','Server bericht']]),
+  'Junior management':     _off(...[_S,_SM,_BL,['Permanente ban','Tijdelijke ban','Ban opheffen','Geld geven','Items spawnen','God mode','Noclip','Wapens geven','Weer aanpassen','Tijd aanpassen'],_CM,_SP]),
+
+  // ── Administratie ─────────────────────────────────
+  'Administrator':         _off(...[_S,_SM,_BL,['Permanente ban','Ban opheffen','Geld geven','Items spawnen','God mode','Wapens geven','Weer aanpassen','Tijd aanpassen'],_CM]),
+  'Junior administrator':  _off(...[_S,_SM,_BL,['Permanente ban','Tijdelijke ban','Ban opheffen','Geld geven','Items spawnen','God mode','Noclip','Wapens geven','Weer aanpassen','Tijd aanpassen'],_CM,_SP]),
+
+  // ── Moderatie ─────────────────────────────────────
+  'Senior moderator':      _off(...[_S,_SM,_BL,_BN,_IG,_CM,['Speler freezen']]),
+  'Moderator':             _off(...[_S,_SM,_BL,_BN,_IG,_CM,_SP]),
+  'Junior moderator':      _off(...[_S,_SM,_BL,_BN,_IG,_CM,_SP,['Speler muten']]),
+
+  // ── Content ───────────────────────────────────────
+  'Content management':    _off(...[_S,_SM,_BL,_BN,_IG,_SP,['Speler kicken','Speler muten','Speler freezen','Speler waarschuwen'],['Globale melding','Server bericht']]),
+  'Content creator':       _off(...[_S,_SM,_BL,_BN,_IG,_SP,['Speler kicken','Speler muten','Speler freezen','Speler waarschuwen'],['Aankondiging sturen','Globale melding','Server bericht','Straf loggen']]),
 };
 
 function defaultPermsForRole(rol) {
@@ -967,7 +989,8 @@ function defaultPermsForRole(rol) {
   const result = {};
   PERM_CATEGORIEEN.forEach(cat => {
     cat.perms.forEach(p => {
-      result[p] = p in overrides ? overrides[p] : true;
+      // Als de perm expliciet false is → uit; anders aan
+      result[p] = (p in overrides) ? overrides[p] : true;
     });
   });
   return result;
