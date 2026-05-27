@@ -918,13 +918,28 @@ function statusBadge(s) {
   return `<span class="badge ${m[s]||'badge-blue'}">${s}</span>`;
 }
 function rangBadge(r) {
-  const m={'Eigenaar':'badge-purple','Mede-eigenaar':'badge-yellow','Directeur':'badge-blue','Admin':'badge-green','Moderator':'badge-green'};
+  const m={
+    'Eigenaar':'badge-purple','Mede-eigenaar':'badge-purple',
+    'Beheer':'badge-red','Mede-beheer':'badge-red',
+    'Lead executive':'badge-yellow','head lead developer':'badge-yellow',
+    'senior lead developer':'badge-yellow','junior Lead development':'badge-yellow',
+    'Discord Development':'badge-blue',
+    'Bestuur':'badge-blue','directeur':'badge-blue',
+    'burgemeester':'badge-blue','hoge raad':'badge-blue',
+    'Supervisor':'badge-green','V.I.P':'badge-purple',
+    'Head management':'badge-green','Management':'badge-green',
+    'Senior administrator':'badge-green','Junior management':'badge-green',
+    'Administrator':'badge-green','Junior administrator':'badge-green',
+    'Senior moderator':'badge-yellow','Moderator':'badge-yellow',
+    'Junior moderator':'badge-yellow',
+    'Content management':'badge-blue','Content creator':'badge-blue',
+  };
   return `<span class="badge ${m[r]||'badge-blue'}">${r}</span>`;
 }
 function avatarClass(r) {
-  if(r==='Eigenaar') return 'role-eigenaar';
-  if(r==='Mede-eigenaar') return 'role-mede';
-  if(r==='Directeur') return 'role-directeur';
+  if(['Eigenaar','Mede-eigenaar'].includes(r)) return 'role-eigenaar';
+  if(['Beheer','Mede-beheer','Lead executive','head lead developer'].includes(r)) return 'role-mede';
+  if(['Bestuur','directeur','burgemeester','hoge raad','Supervisor'].includes(r)) return 'role-directeur';
   return 'role-default';
 }
 function pIcon(p){return p==='hoog'?'🔴':p==='middel'?'🟡':'🔵';}
@@ -1067,15 +1082,15 @@ function navigate(page, btn) {
 // 13. MODAL (CRUD)
 // ══════════════════════════════════════════════
 const FORMS = {
-  staf:{title:'Staflid',fields:[
+  get staf(){return {title:'Staflid',fields:[
     {key:'naam',label:'Naam',type:'text',required:true},
     {key:'discord',label:'Discord',type:'text'},
-    {key:'rang',label:'Rang',type:'select',options:['Eigenaar','Mede-eigenaar','Beheer','Mede-beheer','Lead executive','head lead developer','senior lead developer','junior Lead development','Discord Development','Bestuur','directeur','burgemeester','hoge raad','Supervisor','V.I.P','Head management','Management','Senior administrator','Junior management','Administrator','Junior administrator','Senior moderator','Moderator','Junior moderator','Content management','Content creator']},
+    {key:'rang',label:'Rang',type:'select',options:PERM_ROLLEN},
     {key:'afdeling',label:'Afdeling',type:'text'},
     {key:'dienst',label:'In dienst sinds',type:'text',placeholder:'bijv. 1 jan 2025'},
     {key:'status',label:'Status',type:'select',options:['Actief','Inactief','Verlof']},
     {key:'notities',label:'Notities',type:'textarea'},
-  ]},
+  ]};},
   straf:{title:'Straf',fields:[
     {key:'datum',label:'Datum',type:'date',required:true},
     {key:'speler',label:'Spelersnaam',type:'text',required:true},
