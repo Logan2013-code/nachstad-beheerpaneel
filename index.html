@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nachstad — Beheerpaneel</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c12; --surface: #111520; --surface2: #181d2e;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --accent: #4f8ef7; --accent2: #7b5cf0;
+    --green: #22c97a; --red: #f74f4f; --yellow: #f7c94f;
+    --text: #e8eaf2; --muted: #6b7394;
+    --font-display: 'Rajdhani', sans-serif; --font-body: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; }
+
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px; flex-shrink: 0; background: var(--surface);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .logo {
+    padding: 28px 20px 20px; border-bottom: 1px solid var(--border);
+    font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: 0.04em; color: #fff;
+  }
+  .logo span { color: var(--accent); }
+  .logo small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+  .nav { padding: 16px 12px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+    color: var(--muted); transition: all 0.18s; margin-bottom: 2px; border: none;
+    background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active { background: rgba(79,142,247,0.13); color: var(--accent); }
+  .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+
+  .main { flex: 1; overflow-x: hidden; }
+  .topbar {
+    padding: 20px 32px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: 0.03em; }
+  .topbar-sub { font-size: 13px; color: var(--muted); margin-top: 1px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 999px; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .badge-green { background: rgba(34,201,122,0.13); color: var(--green); }
+  .badge-red { background: rgba(247,79,79,0.13); color: var(--red); }
+  .badge-yellow { background: rgba(247,201,79,0.13); color: var(--yellow); }
+  .badge-blue { background: rgba(79,142,247,0.13); color: var(--accent); }
+  .badge-purple { background: rgba(123,92,240,0.13); color: var(--accent2); }
+
+  .page { display: none; padding: 32px; animation: fadein 0.25s ease; }
+  .page.active { display: block; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; position: relative; overflow: hidden;
+    transition: transform 0.18s, box-shadow 0.18s; cursor: default;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.blue::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-card.yellow::before { background: var(--yellow); }
+  .stat-card.purple::before { background: var(--accent2); }
+  .stat-num { font-family: var(--font-display); font-size: 36px; font-weight: 700; line-height: 1; }
+  .stat-num.blue { color: var(--accent); }
+  .stat-num.green { color: var(--green); }
+  .stat-num.red { color: var(--red); }
+  .stat-num.yellow { color: var(--yellow); }
+  .stat-num.purple { color: var(--accent2); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .section-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.025); }
+  tbody td { padding: 13px 16px; font-size: 13.5px; color: var(--text); }
+  .td-muted { color: var(--muted); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  .task-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 14px;
+    transition: border-color 0.18s;
+  }
+  .task-card:hover { border-color: var(--border2); }
+  .task-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
+  .task-icon.hoog { background: rgba(247,79,79,0.12); }
+  .task-icon.middel { background: rgba(247,201,79,0.12); }
+  .task-icon.laag { background: rgba(79,142,247,0.12); }
+  .task-title { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+  .task-meta { font-size: 12px; color: var(--muted); }
+  .task-status { margin-left: auto; flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+
+  .bl-card {
+    background: var(--surface); border: 1px solid rgba(247,79,79,0.2); border-radius: 12px;
+    padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px;
+  }
+  .bl-avatar { width: 38px; height: 38px; border-radius: 50%; background: rgba(247,79,79,0.12); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--red); flex-shrink: 0; }
+  .bl-name { font-size: 14px; font-weight: 600; }
+  .bl-discord { font-size: 12px; color: var(--muted); }
+  .bl-reason { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .bl-right { margin-left: auto; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+
+  .staff-avatar { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 13px; color: #fff; }
+  .role-eigenaar { background: linear-gradient(135deg,#4f8ef7,#7b5cf0); }
+  .role-mede { background: linear-gradient(135deg,#f7c94f,#f7894f); }
+  .role-directeur { background: linear-gradient(135deg,#22c97a,#4f8ef7); }
+  .role-default { background: var(--surface2); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+    border: none; transition: all 0.15s; font-family: var(--font-body);
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3a7de8; }
+  .btn-danger { background: rgba(247,79,79,0.15); color: var(--red); border: 1px solid rgba(247,79,79,0.3); }
+  .btn-danger:hover { background: rgba(247,79,79,0.25); }
+  .btn-ghost { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.09); color: var(--text); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-icon { padding: 6px; border-radius: 6px; }
+
+  .action-row { display: flex; align-items: center; gap: 8px; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100;
+    display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 16px;
+    padding: 28px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+    animation: fadein 0.2s ease;
+  }
+  .modal-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px;
+    font-family: var(--font-body); outline: none; transition: border-color 0.15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-select option { background: var(--surface2); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 200;
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 10px;
+    padding: 12px 18px; font-size: 13px; display: flex; align-items: center; gap: 10px;
+    animation: fadein 0.2s ease; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.hidden { display: none; }
+
+  /* empty state */
+  .empty-state {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 48px; text-align: center; color: var(--muted);
+  }
+  .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-state .title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .empty-state .sub { font-size: 13px; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+  .soll-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px;
+  }
+  .soll-info { flex: 1; }
+  .soll-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .soll-meta { font-size: 12px; color: var(--muted); }
+  .soll-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+  /* PERMS */
+  .role-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .role-tab {
+    padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border2); background: var(--surface);
+    color: var(--muted); transition: all 0.15s; font-family: var(--font-body);
+  }
+  .role-tab:hover { color: var(--text); background: var(--surface2); }
+  .role-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .perm-categories { display: flex; flex-direction: column; gap: 20px; }
+  .perm-cat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .perm-cat-header {
+    padding: 13px 20px; background: var(--surface2); border-bottom: 1px solid var(--border);
+    font-family: var(--font-display); font-size: 13px; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .perm-cat-header span { font-size: 16px; }
+  .perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; padding: 16px 20px; }
+  .perm-btn {
+    display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+    border-radius: 8px; border: 1px solid var(--border2); cursor: pointer;
+    font-size: 13px; font-weight: 500; font-family: var(--font-body);
+    transition: all 0.15s; background: var(--surface2); color: var(--muted);
+    text-align: left;
+  }
+  .perm-btn.on {
+    background: rgba(34,201,122,0.1); border-color: rgba(34,201,122,0.35);
+    color: var(--green);
+  }
+  .perm-btn.on::before { content: '✓'; font-weight: 700; }
+  .perm-btn:not(.on)::before { content: '✗'; color: var(--red); }
+  .perm-btn:hover { border-color: var(--accent); }
+
+  .perm-reset-bar { display: flex; justify-content: flex-end; margin-bottom: 16px; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      NACH<span>STAD</span>
+      <small>Beheerpaneel</small>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" onclick="navigate('dashboard', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="navigate('staf', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Staflijst
+      </button>
+      <button class="nav-item" onclick="navigate('straffen', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Straflog
+      </button>
+      <button class="nav-item" onclick="navigate('blacklist', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        Blacklist
+      </button>
+      <button class="nav-item" onclick="navigate('notities', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Notities & Taken
+      </button>
+      <button class="nav-item" onclick="navigate('sollicitaties', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        Sollicitaties
+      </button>
+      <button class="nav-item" onclick="navigate('perms', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Permissies
+      </button>
+    </nav>
+    <div class="sidebar-footer">v2.0 &nbsp;·&nbsp; Nachstad RP</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">Dashboard</div>
+          <div class="topbar-sub">Overzicht van de server</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge badge-green">● Online</span>
+        </div>
+      </div>
+      <div style="padding:32px">
+        <div class="stats-grid">
+          <div class="stat-card blue"><div class="stat-num blue" id="stat-staf">0</div><div class="stat-label">Actieve stafleden</div></div>
+          <div class="stat-card green"><div class="stat-num green" id="stat-soll">0</div><div class="stat-label">Open sollicitaties</div></div>
+          <div class="stat-card red"><div class="stat-num red" id="stat-bl">0</div><div class="stat-label">Blacklist entries</div></div>
+          <div class="stat-card yellow"><div class="stat-num yellow" id="stat-straf">0</div><div class="stat-label">Actieve straffen</div></div>
+          <div class="stat-card purple"><div class="stat-num purple" id="stat-taken">0</div><div class="stat-label">Open taken</div></div>
+        </div>
+
+        <div class="section-title">Kleurenlegenda</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Actief / Ban / Hoge prioriteit</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>Waarschuwing / Middel prioriteit</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Goedgekeurd / Afgerond</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Standaard / Normaal</div>
+        </div>
+
+        <div class="section-title">Recente straf activiteit</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Datum</th><th>Speler</th><th>Straf</th><th>Reden</th><th>Status</th></tr></thead>
+            <tbody id="dash-straf-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="section-title">Recente taken</div>
+        <div id="dash-taken"></div>
+      </div>
+    </div>
+
+    <!-- STAFLIJST -->
+    <div id="page-staf" class="page">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">Staflijst</div>
+          <div class="topbar-sub">Alle actieve stafleden</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge badge-blue" id="badge-staf">0 leden</span>
+          <button class="btn btn-primary" onclick="openModal('staf')">+ Toevoegen</button>
+        </div>
+      </div>
+      <div style="padding:32px">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Naam</th><th>Discord</th><th>Rang</th><th>Afdeling</th><th>In dienst</th><th>Status</th><th>Notities</th><th>Acties</th></tr></thead>
+            <tbody id="staf-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STRAFLOG -->
+    <div id="page-straffen" class="page">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">Straf & Waarschuwingslog</div>
+          <div class="topbar-sub">Overzicht van alle straffen</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge badge-red" id="badge-straf">0 actief</span>
+          <button class="btn btn-primary" onclick="openModal('straf')">+ Toevoegen</button>
+        </div>
+      </div>
+      <div style="padding:32px">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Datum</th><th>Speler</th><th>Discord</th><th>Straf type</th><th>Reden</th><th>Duur</th><th>Door</th><th>Status</th><th>Acties</th></tr></thead>
+            <tbody id="straf-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLACKLIST -->
+    <div id="page-blacklist" class="page">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">Sollicitatie Blacklist</div>
+          <div class="topbar-sub">Geblokkeerde spelers</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge badge-red" id="badge-bl">0 entries</span>
+          <button class="btn btn-primary" onclick="openModal('bl')">+ Toevoegen</button>
+        </div>
+      </div>
+      <div style="padding:32px" id="bl-list"></div>
+    </div>
+
+    <!-- NOTITIES -->
+    <div id="page-notities" class="page">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">Notities & Taken</div>
+          <div class="topbar-sub">Interne aankondigingen en takenlijst</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge badge-yellow" id="badge-taken">0 open</span>
+          <button class="btn btn-primary" onclick="openModal('taak')">+ Toevoegen</button>
+        </div>
+      </div>
+      <div style="padding:32px" id="taken-list"></div>
+    </div>
+
+    <!-- PERMISSIES -->
+    <div id="page-perms" class="page">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">Permissies</div>
+          <div class="topbar-sub">Rechten per staffrol</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" onclick="resetPermsRole()">↩ Reset rol</button>
+          <button class="btn btn-danger btn-sm" onclick="resetAllPerms()">Reset alles</button>
+        </div>
+      </div>
+      <div style="padding:32px">
+        <div class="role-tabs" id="perm-role-tabs"></div>
+        <div class="perm-categories" id="perm-categories"></div>
+      </div>
+    </div>
+
+    <!-- SOLLICITATIES -->
+    <div id="page-sollicitaties" class="page">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">Sollicitaties</div>
+          <div class="topbar-sub">Overzicht van binnenkomende sollicitaties</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge badge-green" id="badge-soll">0 open</span>
+          <button class="btn btn-primary" onclick="openModal('soll')">+ Toevoegen</button>
+        </div>
+      </div>
+      <div style="padding:32px" id="soll-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-title" id="modal-title">Toevoegen</div>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Annuleren</button>
+      <button class="btn btn-primary" id="modal-save" onclick="saveModal()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">Opgeslagen!</span>
+</div>
+
+<script>
+// ===================== DATA =====================
+const DEFAULT = {
+  staf: [
+    {id:1,naam:'max developer',discord:'@max',rang:'Eigenaar',afdeling:'eigenaar',dienst:'15 jan 2024',status:'Actief',notities:'Oprichter van de server'},
+    {id:2,naam:'Logan',discord:'@logan',rang:'Eigenaar',afdeling:'eigenaar',dienst:'10 mrt 2024',status:'Actief',notities:'Eigenaar van de stad'},
+    {id:3,naam:'xander',discord:'@xander',rang:'Mede-Eigenaar',afdeling:'mede eigenaar',dienst:'1 jun 2024',status:'Actief',notities:'Mede eigenaar'},
+    {id:4,naam:'noboja',discord:'@legendgamers',rang:'Directeur',afdeling:'directeur staff',dienst:'20 jan 2025',status:'Actief',notities:'—'},
+  ],
+  straffen: [
+    {id:1,datum:'2025-05-18',speler:'GhostRacer_NL',discord:'GhostRacer#7777',type:'Kick',reden:'Intentioneel crashen van anderen',duur:'—',door:'NewHelper#9999',status:'Actief'},
+    {id:2,datum:'2025-05-10',speler:'ToxicPlayer_X',discord:'ToxicPlayer#6666',type:'Tijdelijke Ban',reden:'Teamkilling + beledigingen',duur:'7 dagen',door:'ServerAdmin#1234',status:'Verlopen'},
+    {id:3,datum:'2025-05-05',speler:'OffRoad_Trouble',discord:'OffRoad#5555',type:'Mute',reden:'Vloeken na meerdere waarschuwingen',duur:'1 uur',door:'CoolMod#5678',status:'Verlopen'},
+    {id:4,datum:'2025-05-01',speler:'BrakeSpammer22',discord:'BrakeSpammer#2222',type:'Waarschuwing',reden:'Spammen in de chat',duur:'—',door:'CoolMod#5678',status:'Actief'},
+  ],
+  blacklist: [
+    {id:1,naam:'Italo',discord:'crispy',reden:'Inactief — nooit reageren',duur:'Permanent',door:'logan',beperking:'Mag max. Admin Management'},
+    {id:2,naam:'Ruben',discord:'rubenkort',reden:'Inactief — nooit reageren',duur:'Permanent',door:'logan',beperking:'Mag max. Admin Management'},
+    {id:3,naam:'Ayden',discord:'Ayden',reden:'Nooit actief',duur:'Permanent',door:'logan',beperking:'Mag nooit meer staff worden'},
+  ],
+  taken: [
+    {id:1,titel:'Nieuwe serverregels opstellen voor de race-afdeling',type:'Taak',door:'ServerAdmin#1234',datum:'2025-05-20',prioriteit:'hoog',status:'In uitvoering'},
+    {id:2,titel:'Bot geeft geen rollen na goedgekeurde sollicitatie — nakijken',type:'Bug/Probleem',door:'ServerAdmin#1234',datum:'2025-05-22',prioriteit:'hoog',status:'Open'},
+    {id:3,titel:'Bloxfruits menu met keuze uit roleplay en bloxfruits',type:'Idee',door:'loganbakker',datum:'2025-05-26',prioriteit:'hoog',status:'Open'},
+    {id:4,titel:'Evenement: Race Night zaterdag 31 mei om 20:00',type:'Aankondiging',door:'LegendaryRider#0001',datum:'2025-05-21',prioriteit:'middel',status:'Open'},
+    {id:5,titel:'Staff meeting plannen voor mei',type:'Taak',door:'LegendaryRider#0001',datum:'2025-05-10',prioriteit:'middel',status:'Gedaan'},
+    {id:6,titel:'Overweeg een apart kanaal voor reportjes',type:'Notitie',door:'CoolMod#5678',datum:'2025-05-23',prioriteit:'laag',status:'Open'},
+  ],
+  sollicitaties: [],
+};
+
+function load() {
+  return {
+    staf: JSON.parse(localStorage.getItem('ns_staf') || 'null') || DEFAULT.staf,
+    straffen: JSON.parse(localStorage.getItem('ns_straffen') || 'null') || DEFAULT.straffen,
+    blacklist: JSON.parse(localStorage.getItem('ns_blacklist') || 'null') || DEFAULT.blacklist,
+    taken: JSON.parse(localStorage.getItem('ns_taken') || 'null') || DEFAULT.taken,
+    sollicitaties: JSON.parse(localStorage.getItem('ns_sollicitaties') || 'null') || DEFAULT.sollicitaties,
+  };
+}
+
+function save(data) {
+  localStorage.setItem('ns_staf', JSON.stringify(data.staf));
+  localStorage.setItem('ns_straffen', JSON.stringify(data.straffen));
+  localStorage.setItem('ns_blacklist', JSON.stringify(data.blacklist));
+  localStorage.setItem('ns_taken', JSON.stringify(data.taken));
+  localStorage.setItem('ns_sollicitaties', JSON.stringify(data.sollicitaties));
+}
+
+let db = load();
+let nextId = () => Date.now();
+let editCtx = null; // {type, id}
+
+// ===================== NAVIGATION =====================
+function navigate(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  btn.classList.add('active');
+  renderAll();
+}
+
+// ===================== RENDER =====================
+function renderAll() {
+  renderStats();
+  renderDashboard();
+  renderStaf();
+  renderStraffen();
+  renderBlacklist();
+  renderTaken();
+  renderSollicitaties();
+}
+
+function renderStats() {
+  db = load();
+  const stafActief = db.staf.filter(s => s.status === 'Actief').length;
+  const sollOpen = db.sollicitaties.filter(s => s.status === 'Open').length;
+  const blCount = db.blacklist.length;
+  const strafActief = db.straffen.filter(s => s.status === 'Actief').length;
+  const takenOpen = db.taken.filter(t => t.status !== 'Gedaan').length;
+
+  document.getElementById('stat-staf').textContent = stafActief;
+  document.getElementById('stat-soll').textContent = sollOpen;
+  document.getElementById('stat-bl').textContent = blCount;
+  document.getElementById('stat-straf').textContent = strafActief;
+  document.getElementById('stat-taken').textContent = takenOpen;
+
+  document.getElementById('badge-staf').textContent = db.staf.length + ' leden';
+  document.getElementById('badge-straf').textContent = strafActief + ' actief';
+  document.getElementById('badge-bl').textContent = blCount + ' entries';
+  document.getElementById('badge-taken').textContent = takenOpen + ' open';
+  document.getElementById('badge-soll').textContent = sollOpen + ' open';
+}
+
+function strafBadge(type) {
+  const map = {'Kick':'badge-yellow','Waarschuwing':'badge-blue','Mute':'badge-yellow','Tijdelijke Ban':'badge-red','Permanente Ban':'badge-red'};
+  return `<span class="badge ${map[type]||'badge-blue'}">${type}</span>`;
+}
+function statusBadge(s) {
+  const map = {'Actief':'badge-red','Verlopen':'badge-green','In uitvoering':'badge-yellow','Open':'badge-red','Gedaan':'badge-green','Goedgekeurd':'badge-green','Afgewezen':'badge-red'};
+  return `<span class="badge ${map[s]||'badge-blue'}">${s}</span>`;
+}
+function rangBadge(r) {
+  const map = {'Eigenaar':'badge-purple','Mede-Eigenaar':'badge-yellow','Directeur':'badge-blue','Admin':'badge-green','Moderator':'badge-green','Trial-Mod':'badge-blue'};
+  return `<span class="badge ${map[r]||'badge-blue'}">${r}</span>`;
+}
+function avatarClass(rang) {
+  if(rang==='Eigenaar') return 'role-eigenaar';
+  if(rang==='Mede-Eigenaar') return 'role-mede';
+  if(rang==='Directeur') return 'role-directeur';
+  return 'role-default';
+}
+function priorityIcon(p) {
+  return p==='hoog'?'🔴':p==='middel'?'🟡':'🔵';
+}
+
+function renderDashboard() {
+  const recent = [...db.straffen].sort((a,b)=>b.datum.localeCompare(a.datum)).slice(0,4);
+  const tbody = document.getElementById('dash-straf-tbody');
+  if(recent.length===0){
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Geen straffen</td></tr>`;
+  } else {
+    tbody.innerHTML = recent.map(s=>`
+      <tr>
+        <td class="td-muted">${s.datum}</td>
+        <td>${s.speler}</td>
+        <td>${strafBadge(s.type)}</td>
+        <td>${s.reden}</td>
+        <td>${statusBadge(s.status)}</td>
+      </tr>`).join('');
+  }
+
+  const recentTaken = [...db.taken].filter(t=>t.status!=='Gedaan').slice(0,3);
+  const takenEl = document.getElementById('dash-taken');
+  if(recentTaken.length===0){
+    takenEl.innerHTML = `<div class="empty-state"><div class="icon">✅</div><div class="title">Geen open taken</div></div>`;
+  } else {
+    takenEl.innerHTML = recentTaken.map(t=>`
+      <div class="task-card">
+        <div class="task-icon ${t.prioriteit}">${priorityIcon(t.prioriteit)}</div>
+        <div>
+          <div class="task-title">${t.titel}</div>
+          <div class="task-meta">${t.door} &nbsp;·&nbsp; ${t.datum}</div>
+        </div>
+        <div class="task-status">${statusBadge(t.status)}</div>
+      </div>`).join('');
+  }
+}
+
+function renderStaf() {
+  const tbody = document.getElementById('staf-tbody');
+  if(db.staf.length===0){
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Geen stafleden — voeg iemand toe</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = db.staf.map(s=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="staff-avatar ${avatarClass(s.rang)}">${s.naam[0].toUpperCase()}</div> ${s.naam}
+      </div></td>
+      <td class="td-muted">${s.discord}</td>
+      <td>${rangBadge(s.rang)}</td>
+      <td class="td-muted">${s.afdeling}</td>
+      <td class="td-muted">${s.dienst}</td>
+      <td>${statusBadge(s.status)}</td>
+      <td class="td-muted">${s.notities||'—'}</td>
+      <td>
+        <div class="action-row">
+          <button class="btn btn-ghost btn-sm btn-icon" title="Bewerken" onclick="editItem('staf',${s.id})">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" title="Verwijderen" onclick="deleteItem('staf',${s.id})">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function renderStraffen() {
+  const tbody = document.getElementById('straf-tbody');
+  if(db.straffen.length===0){
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Geen straffen</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = db.straffen.map(s=>`
+    <tr>
+      <td class="td-muted">${s.datum}</td>
+      <td>${s.speler}</td>
+      <td class="td-muted">${s.discord}</td>
+      <td>${strafBadge(s.type)}</td>
+      <td>${s.reden}</td>
+      <td class="td-muted">${s.duur||'—'}</td>
+      <td class="td-muted">${s.door}</td>
+      <td>${statusBadge(s.status)}</td>
+      <td>
+        <div class="action-row">
+          <button class="btn btn-ghost btn-sm btn-icon" title="Bewerken" onclick="editItem('straf',${s.id})">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" title="Verwijderen" onclick="deleteItem('straf',${s.id})">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function renderBlacklist() {
+  const el = document.getElementById('bl-list');
+  if(db.blacklist.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="icon">✅</div><div class="title">Geen blacklist entries</div><div class="sub">Niemand geblokkeerd.</div></div>`;
+    return;
+  }
+  el.innerHTML = db.blacklist.map(b=>`
+    <div class="bl-card">
+      <div class="bl-avatar">${b.naam[0].toUpperCase()}</div>
+      <div>
+        <div class="bl-name">${b.naam}</div>
+        <div class="bl-discord">${b.discord}</div>
+        <div class="bl-reason">${b.reden}</div>
+      </div>
+      <div class="bl-right">
+        <span class="badge badge-red">${b.duur}</span>
+        <div style="font-size:12px;color:var(--muted)">Door: ${b.door}</div>
+        <div style="font-size:11px;color:var(--muted)">${b.beperking}</div>
+        <div class="action-row" style="margin-top:6px">
+          <button class="btn btn-ghost btn-sm btn-icon" title="Bewerken" onclick="editItem('bl',${b.id})">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" title="Verwijderen" onclick="deleteItem('bl',${b.id})">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderTaken() {
+  const el = document.getElementById('taken-list');
+  if(db.taken.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div class="title">Geen taken</div><div class="sub">Voeg een taak of notitie toe.</div></div>`;
+    return;
+  }
+  const groups = ['hoog','middel','laag'];
+  const labels = {hoog:'Hoge prioriteit', middel:'Middel prioriteit', laag:'Lage prioriteit'};
+  let html = '';
+  groups.forEach(p => {
+    const items = db.taken.filter(t=>t.prioriteit===p);
+    if(items.length===0) return;
+    html += `<div class="section-title" style="margin-top:16px">${labels[p]}</div>`;
+    items.forEach(t => {
+      html += `
+        <div class="task-card">
+          <div class="task-icon ${t.prioriteit}">${priorityIcon(t.prioriteit)}</div>
+          <div style="flex:1">
+            <div class="task-title">${t.titel}</div>
+            <div class="task-meta">${t.type} &nbsp;·&nbsp; ${t.door} &nbsp;·&nbsp; ${t.datum}</div>
+          </div>
+          <div class="task-status">
+            ${statusBadge(t.status)}
+            <button class="btn btn-ghost btn-sm btn-icon" title="Bewerken" onclick="editItem('taak',${t.id})">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" title="Verwijderen" onclick="deleteItem('taak',${t.id})">🗑️</button>
+          </div>
+        </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+function renderSollicitaties() {
+  const el = document.getElementById('soll-list');
+  if(db.sollicitaties.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div class="title">Geen open sollicitaties</div><div class="sub">Alle sollicitaties zijn verwerkt.</div></div>`;
+    return;
+  }
+  el.innerHTML = db.sollicitaties.map(s=>`
+    <div class="soll-card">
+      <div class="soll-info">
+        <div class="soll-name">${s.naam}</div>
+        <div class="soll-meta">Discord: ${s.discord} &nbsp;·&nbsp; Functie: ${s.functie} &nbsp;·&nbsp; ${s.datum}</div>
+        ${s.motivatie ? `<div style="font-size:13px;color:var(--muted);margin-top:6px">${s.motivatie}</div>` : ''}
+      </div>
+      <div class="soll-actions">
+        ${statusBadge(s.status)}
+        <button class="btn btn-ghost btn-sm btn-icon" title="Bewerken" onclick="editItem('soll',${s.id})">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon" title="Verwijderen" onclick="deleteItem('soll',${s.id})">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+// ===================== MODAL =====================
+const FORMS = {
+  staf: {
+    title: 'Staflid',
+    fields: [
+      {key:'naam', label:'Naam', type:'text', required:true},
+      {key:'discord', label:'Discord', type:'text'},
+      {key:'rang', label:'Rang', type:'select', options:['Eigenaar','Mede-Eigenaar','Directeur','Admin','Moderator','Trial-Mod']},
+      {key:'afdeling', label:'Afdeling', type:'text'},
+      {key:'dienst', label:'In dienst sinds', type:'text', placeholder:'bijv. 1 jan 2025'},
+      {key:'status', label:'Status', type:'select', options:['Actief','Inactief','Verlof']},
+      {key:'notities', label:'Notities', type:'textarea'},
+    ]
+  },
+  straf: {
+    title: 'Straf',
+    fields: [
+      {key:'datum', label:'Datum', type:'date', required:true},
+      {key:'speler', label:'Spelersnaam', type:'text', required:true},
+      {key:'discord', label:'Discord', type:'text'},
+      {key:'type', label:'Straf type', type:'select', options:['Waarschuwing','Kick','Mute','Tijdelijke Ban','Permanente Ban']},
+      {key:'reden', label:'Reden', type:'textarea', required:true},
+      {key:'duur', label:'Duur', type:'text', placeholder:'bijv. 7 dagen'},
+      {key:'door', label:'Uitgedeeld door', type:'text'},
+      {key:'status', label:'Status', type:'select', options:['Actief','Verlopen']},
+    ]
+  },
+  bl: {
+    title: 'Blacklist entry',
+    fields: [
+      {key:'naam', label:'Naam', type:'text', required:true},
+      {key:'discord', label:'Discord', type:'text'},
+      {key:'reden', label:'Reden', type:'textarea', required:true},
+      {key:'duur', label:'Duur', type:'select', options:['Permanent','Tijdelijk']},
+      {key:'door', label:'Toegevoegd door', type:'text'},
+      {key:'beperking', label:'Beperking/Toelichting', type:'text'},
+    ]
+  },
+  taak: {
+    title: 'Taak / Notitie',
+    fields: [
+      {key:'titel', label:'Titel', type:'text', required:true},
+      {key:'type', label:'Type', type:'select', options:['Taak','Bug/Probleem','Idee','Aankondiging','Notitie']},
+      {key:'door', label:'Door', type:'text'},
+      {key:'datum', label:'Datum', type:'date'},
+      {key:'prioriteit', label:'Prioriteit', type:'select', options:['hoog','middel','laag']},
+      {key:'status', label:'Status', type:'select', options:['Open','In uitvoering','Gedaan']},
+    ]
+  },
+  soll: {
+    title: 'Sollicitatie',
+    fields: [
+      {key:'naam', label:'Naam', type:'text', required:true},
+      {key:'discord', label:'Discord', type:'text'},
+      {key:'functie', label:'Functie', type:'text'},
+      {key:'datum', label:'Datum', type:'date'},
+      {key:'motivatie', label:'Motivatie', type:'textarea'},
+      {key:'status', label:'Status', type:'select', options:['Open','Goedgekeurd','Afgewezen']},
+    ]
+  }
+};
+
+function dbKey(type) {
+  const map = {staf:'staf', straf:'straffen', bl:'blacklist', taak:'taken', soll:'sollicitaties'};
+  return map[type];
+}
+
+function openModal(type, existing) {
+  editCtx = existing ? {type, id: existing.id} : {type, id: null};
+  const form = FORMS[type];
+  document.getElementById('modal-title').textContent = (existing ? 'Bewerken: ' : 'Nieuw: ') + form.title;
+
+  let html = '';
+  form.fields.forEach(f => {
+    const val = existing ? (existing[f.key] || '') : '';
+    html += `<div class="form-group"><label class="form-label">${f.label}${f.required?' *':''}</label>`;
+    if(f.type === 'select') {
+      html += `<select class="form-select" id="field-${f.key}">`;
+      f.options.forEach(o => html += `<option value="${o}" ${val===o?'selected':''}>${o}</option>`);
+      html += `</select>`;
+    } else if(f.type === 'textarea') {
+      html += `<textarea class="form-textarea" id="field-${f.key}" placeholder="${f.placeholder||''}">${val}</textarea>`;
+    } else {
+      html += `<input class="form-input" id="field-${f.key}" type="${f.type}" value="${val}" placeholder="${f.placeholder||''}">`;
+    }
+    html += `</div>`;
+  });
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function editItem(type, id) {
+  const key = dbKey(type);
+  const item = db[key].find(x => x.id === id);
+  if(item) openModal(type, item);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editCtx = null;
+}
+
+function closeModalOutside(e) {
+  if(e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function saveModal() {
+  if(!editCtx) return;
+  const {type, id} = editCtx;
+  const form = FORMS[type];
+  const key = dbKey(type);
+
+  const obj = {};
+  let valid = true;
+  form.fields.forEach(f => {
+    const el = document.getElementById('field-' + f.key);
+    obj[f.key] = el ? el.value.trim() : '';
+    if(f.required && !obj[f.key]) { el.style.borderColor = 'var(--red)'; valid = false; }
+    else if(el) el.style.borderColor = '';
+  });
+  if(!valid) { showToast('Vul alle verplichte velden in', '⚠️'); return; }
+
+  if(id) {
+    const idx = db[key].findIndex(x => x.id === id);
+    if(idx !== -1) db[key][idx] = {...db[key][idx], ...obj};
+  } else {
+    obj.id = nextId();
+    db[key].push(obj);
+  }
+
+  save(db);
+  closeModal();
+  renderAll();
+  showToast(id ? 'Bijgewerkt!' : 'Toegevoegd!', '✅');
+}
+
+function deleteItem(type, id) {
+  if(!confirm('Weet je zeker dat je dit wilt verwijderen?')) return;
+  const key = dbKey(type);
+  db[key] = db[key].filter(x => x.id !== id);
+  save(db);
+  renderAll();
+  showToast('Verwijderd', '🗑️');
+}
+
+// ===================== TOAST =====================
+let toastTimer;
+function showToast(msg, icon='✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 2500);
+}
+
+// ===================== PERMS =====================
+const PERM_ROLLEN = ['Eigenaar','Mede-Eigenaar','Hoofd Admin','Admin','Moderator','Trial-Mod'];
+
+const PERM_CATEGORIEEN = [
+  {
+    naam: 'Spelersbeheer', icon: '👤',
+    perms: ['Speler kicken','Speler waarschuwen','Speler muten','Tijdelijke ban','Permanente ban','Ban opheffen','Speler teleporteren','Speler freezen','Spectate speler']
+  },
+  {
+    naam: 'In-game bevoegdheden', icon: '🎮',
+    perms: ['God mode','Noclip','Onzichtbaar','Wapens geven','Voertuig spawnen','Geld geven','Items spawnen','Weer aanpassen','Tijd aanpassen']
+  },
+  {
+    naam: 'Communicatie', icon: '📢',
+    perms: ['Staff chat','Aankondiging sturen','Globale melding','Hint/tip sturen','Server bericht']
+  },
+  {
+    naam: 'Staffbeheer', icon: '🛡️',
+    perms: ['Staff aanwerven','Staff ontslaan','Staff promoveren','Staff degraderen','Straf loggen','Blacklist beheren','Sollicitaties beoordelen']
+  },
+  {
+    naam: 'Serverbeheer', icon: '⚙️',
+    perms: ['Server herstarten','Server afsluiten','Whitelist beheren','Anti-cheat beheren','Logs bekijken','Admin panel openen','Gamepass beheren']
+  }
+];
+
+const PERM_DEFAULTS = {
+  'Eigenaar':      { /* alles aan */ },
+  'Mede-Eigenaar': {
+    'Server afsluiten': false,
+    'Gamepass beheren': false,
+  },
+  'Hoofd Admin': {
+    'Server afsluiten': false, 'Server herstarten': false, 'Whitelist beheren': false,
+    'Anti-cheat beheren': false, 'Gamepass beheren': false,
+    'Staff aanwerven': false, 'Staff ontslaan': false, 'Staff promoveren': false, 'Staff degraderen': false,
+    'Geld geven': false, 'Items spawnen': false,
+  },
+  'Admin': {
+    'Server afsluiten': false, 'Server herstarten': false, 'Whitelist beheren': false,
+    'Anti-cheat beheren': false, 'Gamepass beheren': false, 'Logs bekijken': false, 'Admin panel openen': false,
+    'Staff aanwerven': false, 'Staff ontslaan': false, 'Staff promoveren': false, 'Staff degraderen': false,
+    'Blacklist beheren': false, 'Sollicitaties beoordelen': false,
+    'Permanente ban': false, 'Ban opheffen': false,
+    'Geld geven': false, 'Items spawnen': false, 'God mode': false,
+  },
+  'Moderator': {
+    'Server afsluiten': false, 'Server herstarten': false, 'Whitelist beheren': false,
+    'Anti-cheat beheren': false, 'Gamepass beheren': false, 'Logs bekijken': false, 'Admin panel openen': false,
+    'Staff aanwerven': false, 'Staff ontslaan': false, 'Staff promoveren': false, 'Staff degraderen': false,
+    'Blacklist beheren': false, 'Sollicitaties beoordelen': false,
+    'Permanente ban': false, 'Tijdelijke ban': false, 'Ban opheffen': false,
+    'Geld geven': false, 'Items spawnen': false, 'God mode': false, 'Noclip': false,
+    'Voertuig spawnen': false, 'Wapens geven': false, 'Weer aanpassen': false, 'Tijd aanpassen': false,
+    'Aankondiging sturen': false, 'Globale melding': false, 'Server bericht': false,
+  },
+  'Trial-Mod': {
+    'Server afsluiten': false, 'Server herstarten': false, 'Whitelist beheren': false,
+    'Anti-cheat beheren': false, 'Gamepass beheren': false, 'Logs bekijken': false, 'Admin panel openen': false,
+    'Staff aanwerven': false, 'Staff ontslaan': false, 'Staff promoveren': false, 'Staff degraderen': false,
+    'Blacklist beheren': false, 'Sollicitaties beoordelen': false,
+    'Permanente ban': false, 'Tijdelijke ban': false, 'Ban opheffen': false,
+    'Geld geven': false, 'Items spawnen': false, 'God mode': false, 'Noclip': false,
+    'Voertuig spawnen': false, 'Wapens geven': false, 'Weer aanpassen': false, 'Tijd aanpassen': false,
+    'Aankondiging sturen': false, 'Globale melding': false, 'Server bericht': false,
+    'Speler teleporteren': false, 'Speler freezen': false, 'Spectate speler': false,
+    'Onzichtbaar': false, 'Straf loggen': false,
+  }
+};
+
+function defaultPermsForRole(rol) {
+  const overrides = PERM_DEFAULTS[rol] || {};
+  const result = {};
+  PERM_CATEGORIEEN.forEach(cat => {
+    cat.perms.forEach(p => {
+      result[p] = p in overrides ? overrides[p] : true;
+    });
+  });
+  return result;
+}
+
+function loadPerms() {
+  const saved = localStorage.getItem('ns_perms');
+  if(saved) return JSON.parse(saved);
+  const data = {};
+  PERM_ROLLEN.forEach(r => { data[r] = defaultPermsForRole(r); });
+  return data;
+}
+
+function savePerms(data) {
+  localStorage.setItem('ns_perms', JSON.stringify(data));
+}
+
+let permsData = loadPerms();
+let activePermRol = PERM_ROLLEN[0];
+
+function renderPerms() {
+  // tabs
+  const tabs = document.getElementById('perm-role-tabs');
+  tabs.innerHTML = PERM_ROLLEN.map(r =>
+    `<button class="role-tab${r===activePermRol?' active':''}" onclick="selectPermRol('${r}')">${r}</button>`
+  ).join('');
+
+  // categorieën
+  const cats = document.getElementById('perm-categories');
+  const rolePerms = permsData[activePermRol] || {};
+  cats.innerHTML = PERM_CATEGORIEEN.map(cat => `
+    <div class="perm-cat">
+      <div class="perm-cat-header"><span>${cat.icon}</span>${cat.naam}</div>
+      <div class="perm-grid">
+        ${cat.perms.map(p => `
+          <button class="perm-btn${rolePerms[p]?' on':''}" onclick="togglePerm('${p.replace(/'/g,"\\'")}')">
+            ${p}
+          </button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function selectPermRol(rol) {
+  activePermRol = rol;
+  renderPerms();
+}
+
+function togglePerm(perm) {
+  if(!permsData[activePermRol]) permsData[activePermRol] = defaultPermsForRole(activePermRol);
+  permsData[activePermRol][perm] = !permsData[activePermRol][perm];
+  savePerms(permsData);
+  renderPerms();
+}
+
+function resetPermsRole() {
+  if(!confirm(`Reset alle permissies van "${activePermRol}" naar standaard?`)) return;
+  permsData[activePermRol] = defaultPermsForRole(activePermRol);
+  savePerms(permsData);
+  renderPerms();
+  showToast(`${activePermRol} gereset`, '↩');
+}
+
+function resetAllPerms() {
+  if(!confirm('Reset ALLE rollen naar standaard permissies?')) return;
+  PERM_ROLLEN.forEach(r => { permsData[r] = defaultPermsForRole(r); });
+  savePerms(permsData);
+  renderPerms();
+  showToast('Alle permissies gereset', '↩');
+}
+
+// ===================== INIT =====================
+renderAll();
+renderPerms();
+</script>
+</body>
+</html>
